@@ -21,6 +21,7 @@ resource "azurerm_public_ip" "cc_tf_public_ip" {
   name                         = "${var.prefix}-public_ip"
   location                     = "${azurerm_resource_group.cc_tf_rg.location}"
   resource_group_name          = "${azurerm_resource_group.cc_tf_rg.name}"
+  domain_name_label            = "${var.cyclecloud_dns_label}"
   public_ip_address_allocation = "Dynamic"
 }
 

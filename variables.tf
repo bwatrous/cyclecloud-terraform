@@ -14,9 +14,14 @@ variable "machine_type" {
 }
 
 variable "cyclecloud_computer_name" {
-    description =  "The hostname for the CycleCloud VM"
+    description =  "The private hostname for the CycleCloud VM"
     default = "cyclecloud"
 }
+
+variable "cyclecloud_dns_label" {
+  description = "An optional short public DNS name/label for the CycleCloud VM"
+}
+
 
 variable "cyclecloud_username" {
   description = "The username for the initial CycleCloud Admin user and VM user"
@@ -38,4 +43,17 @@ variable "cyclecloud_storage_account" {
   description = "Name of storage account to use for Azure CycleCloud storage locker"
   default = "bewatrou-cc-tf-storage"
 }
+
+variable "cyclecloud_tenant_id" {
+  description = "Service Principle Tenant ID"
+}
+
+variable "cyclecloud_application_id" {
+  description = "Service Principle Application ID"
+}
+
+variable "cyclecloud_application_secret" {
+  description = "Service Principle Application Secret"
+}
+
 

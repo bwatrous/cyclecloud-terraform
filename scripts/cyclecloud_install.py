@@ -52,7 +52,7 @@ def create_user_credential(username):
 
     copy2(credential_data_file, cycle_root + "/config/data/")
 
-def account_and_cli_setup(vm_metadata, tenant_id, application_id, application_secret, admin_user, azure_cloud, accept_terms, password, storageAccount):
+def account_and_cli_setup(vm_metadata, use_managed_id, tenant_id, application_id, application_secret, admin_user, azure_cloud, accept_terms, password, storageAccount):
     print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
 
     if path.isfile(cycle_root + "/config/data/account_data.json.imported"):
@@ -86,10 +86,7 @@ def account_and_cli_setup(vm_metadata, tenant_id, application_id, application_se
 
     azure_data = {
         "Environment": azure_cloud,
-        "AzureRMApplicationId": application_id,
-        "AzureRMApplicationSecret": application_secret,
-        "AzureRMSubscriptionId": subscription_id,
-        "AzureRMTenantId": tenant_id,
+        "AzureRMUseManagedIdentity": use_managed_identity,
         "AzureResourceGroup": resource_group,
         "DefaultAccount": True,
         "Location": location,
@@ -99,6 +96,14 @@ def account_and_cli_setup(vm_metadata, tenant_id, application_id, application_se
         "RMStorageAccount": storage_account_name,
         "RMStorageContainer": "cyclecloud"
     }
+    if use_managed_identity:
+        azure_data["AzureRMUseManagedIdentity"] = True
+    else:
+        azure_data.update({"AzureRMApplicationId": application_id,
+                           "AzureRMApplicationSecret": application_secret,
+                           "AzureRMSubscriptionId": subscription_id,
+                           "AzureRMTenantId": tenant_id})
+
 
     app_setting_installation = {
         "AdType": "Application.Setting",
@@ -238,47 +243,33 @@ def modify_cs_config():
     #Ensure that the files are created by the cycleserver service user
     _catch_sys_error(["chown", "-R", "cycle_server.", cycle_root])
 
-def download_install_cc(download_url, version):
-    chdir(tmpdir)
-    cyclecloud_tar = "cyclecloud-" + version + "-linux64.tar.gz"
-    cc_url = download_url + "/" + version + "/" + cyclecloud_tar
-
-    print "Downloading CycleCloud from " + cc_url
-    remaining_download_tries = 4
-
-    while remaining_download_tries > 0 :
-        try:
-            urlretrieve(cc_url, cyclecloud_tar)
-            print("successfully downloaded CycleCloud")
-            sleep(1)
-        except:
-            print("Error downloading " + cc_url +" on try no: " + str(5 - remaining_download_tries))
-            remaining_download_tries = remaining_download_tries - 1
-            sleep(10)
-            continue
-        else:
-            break
-
-    cc_tar = tarfile.open(cyclecloud_tar, "r:gz")
-    cc_tar.extractall(path=tmpdir)
-    cc_tar.close()
-
-    # CLI comes with an install script but that installation is user specific
-    # rather than system wide.
-    # Downloading and installing pip, then using that to install the CLIs
-    # from source.
-    print "Unzip and install CLI"
-    _catch_sys_error(["unzip", "cycle_server/tools/cyclecloud-cli.zip"])
-    for cli_install_dir in listdir("."):
-        if path.isdir(cli_install_dir) and re.match("cyclecloud-cli-installer", cli_install_dir):
-            print "Found CLI install DIR %s" % cli_install_dir
-            chdir(cli_install_dir)
-            _catch_sys_error(["./install.sh", "--system"])
-
-    chdir(tmpdir)
-
+def download_install_cc():
     print "Installing Azure CycleCloud server"
-    _catch_sys_error(["cycle_server/install.sh", "--nostart", "--batch"])
+    _catch_sys_error(["yum", "install", "-y", "cyclecloud"])
+
+def configure_msft_yum_repos():
+    print "Configuring Microsoft yum repository for CycleCloud install"
+    _catch_sys_error(
+        ["rpm", "--import", "https://packages.microsoft.com/keys/microsoft.asc"])
+
+    with open('/etc/yum.repos.d/cyclecloud.repo', 'w') as f:
+        f.write("""\
+[cyclecloud]
+name=cyclecloud
+baseurl=https://packages.microsoft.com/yumrepos/cyclecloud
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+""")
+
+    with open('/etc/yum.repos.d/azure-cli.repo', 'w') as f:
+        f.write("""\
+[azure-cli]
+name=Azure CLI
+baseurl=https://packages.microsoft.com/yumrepos/azure-cli
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc"        
+""")
 
 
 def install_pre_req():
@@ -287,25 +278,12 @@ def install_pre_req():
 
     # not strictly needed, but it's useful to have the AZ CLI
     # Taken from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-yum?view=azure-cli-latest
-    _catch_sys_error(
-        ["rpm", "--import", "https://packages.microsoft.com/keys/microsoft.asc"])
-    _catch_sys_error(["sh", "-c", 'echo -e "[azure-cli]\nname=Azure CLI\nbaseurl=https://packages.microsoft.com/yumrepos/azure-cli\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo'])
     _catch_sys_error(["yum", "install", "-y", "azure-cli"])
 
 
 def main():
 
     parser = argparse.ArgumentParser(description="usage: %prog [options]")
-
-    parser.add_argument("--cyclecloudVersion",
-                        dest="cyclecloudVersion",
-                        #   required=True,
-                        help="CycleCloud version to install")
-
-    parser.add_argument("--downloadURL",
-                        dest="downloadURL",
-                        #   required=True,
-                        help="Download URL for the Cycle install")
 
     parser.add_argument("--azureSovereignCloud",
                         dest="azureSovereignCloud",
@@ -336,6 +314,11 @@ def main():
                         action="store_true",
                         help="Accept Cyclecloud terms and do a silent install")
 
+    parser.add_argument("--useManagedIdentity",
+                        dest="useManagedIdentity",
+                        action="store_true",
+                        help="Use the first assigned Managed Identity rather than a Service Principle for the default account")
+
     parser.add_argument("--password",
                         dest="password",
                         help="The password for the CycleCloud UI user")
@@ -348,15 +331,16 @@ def main():
 
     print("Debugging arguments: %s" % args)
 
+    configure_msft_yum_repos()
     install_pre_req()
-    download_install_cc(args.downloadURL, args.cyclecloudVersion)
+    download_install_cc()
     modify_cs_config()
     start_cc()
 
     vm_metadata = get_vm_metadata()
     
     letsEncrypt(args.hostname, vm_metadata["compute"]["location"])
-    account_and_cli_setup(vm_metadata, args.tenantId, args.applicationId,
+    account_and_cli_setup(vm_metadata, args.useManagedIdentity, args.tenantId, args.applicationId,
                           args.applicationSecret, args.username, args.azureSovereignCloud, args.acceptTerms, args.password, args.storageAccount)
     create_user_credential(args.username)
     clean_up()
