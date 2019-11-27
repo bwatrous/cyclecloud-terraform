@@ -6,11 +6,12 @@ variable "prefix" {
 
 variable "location" {
   description = "The Azure Region in which to run CycleCloud"
-  default = "uswest2"
+  default = "westus2"
 }
 
 variable "machine_type" {
   description = "The Azure Machine Type for the CycleCloud VM"
+  default = "Standard_DS4_v2"
 }
 
 variable "cyclecloud_computer_name" {

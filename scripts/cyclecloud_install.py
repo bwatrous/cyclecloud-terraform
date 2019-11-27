@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Prepare an Azure provider account for CycleCloud usage.
+import os
 import argparse
 import tarfile
 import json
@@ -34,7 +35,14 @@ def _catch_sys_error(cmd_list):
         print "Output: %s" % e.output
         raise
 
+def create_keypair(username):
+    _catch_sys_error(["ssh-keygen", "-f", "/home/" + username + "/.ssh/id_rsa", "-N", ""])
+    _catch_sys_error(["cp", "/home/" + username + "/.ssh/id_rsa.pub", "/home/" + username + "/.ssh/authorized_keys"])
+    _catch_sys_error(["chown", "-R", username + ":" + username, "/home/" + username + "/.ssh"])
+
 def create_user_credential(username):
+    if not os.path.isdir("/home/" + username + "/.ssh"):
+        create_keypair(username)
     authorized_keyfile = "/home/" + username + "/.ssh/authorized_keys"
     public_key = ""
     with open(authorized_keyfile, 'r') as pubkeyfile:
@@ -52,7 +60,7 @@ def create_user_credential(username):
 
     copy2(credential_data_file, cycle_root + "/config/data/")
 
-def account_and_cli_setup(vm_metadata, use_managed_id, tenant_id, application_id, application_secret, admin_user, azure_cloud, accept_terms, password, storageAccount):
+def account_and_cli_setup(vm_metadata, use_managed_identity, tenant_id, application_id, application_secret, admin_user, azure_cloud, accept_terms, password, storageAccount):
     print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
 
     if path.isfile(cycle_root + "/config/data/account_data.json.imported"):
@@ -227,13 +235,13 @@ def modify_cs_config():
         with open(cs_config_file) as cs_config:
             for line in cs_config:
                 if line.startswith('webServerMaxHeapSize='):
-                    new_config.write('webServerMaxHeapSize=4096M')
+                    new_config.write('webServerMaxHeapSize=4096M\n')
                 elif line.startswith('webServerPort='):
-                    new_config.write('webServerPort=80')
+                    new_config.write('webServerPort=80\n')
                 elif line.startswith('webServerSslPort='):
-                    new_config.write('webServerSslPort=443')
+                    new_config.write('webServerSslPort=443\n')
                 elif line.startswith('webServerEnableHttps='):
-                    new_config.write('webServerEnableHttps=true')
+                    new_config.write('webServerEnableHttps=true\n')
                 else:
                     new_config.write(line)
 
@@ -243,9 +251,26 @@ def modify_cs_config():
     #Ensure that the files are created by the cycleserver service user
     _catch_sys_error(["chown", "-R", "cycle_server.", cycle_root])
 
+def install_cc_cli():
+    # CLI comes with an install script but that installation is user specific
+    # rather than system wide.
+    # Downloading and installing pip, then using that to install the CLIs
+    # from source.
+    print "Unzip and install CLI"
+    chdir(tmpdir)
+    _catch_sys_error(["unzip", "/opt/cycle_server/tools/cyclecloud-cli.zip"])
+    for cli_install_dir in listdir("."):
+        if path.isdir(cli_install_dir) and re.match("cyclecloud-cli-installer", cli_install_dir):
+            print "Found CLI install DIR %s" % cli_install_dir
+            chdir(cli_install_dir)
+            _catch_sys_error(["./install.sh", "--system"])
+
+
 def download_install_cc():
     print "Installing Azure CycleCloud server"
     _catch_sys_error(["yum", "install", "-y", "cyclecloud"])
+
+    install_cc_cli()
 
 def configure_msft_yum_repos():
     print "Configuring Microsoft yum repository for CycleCloud install"
@@ -268,7 +293,7 @@ name=Azure CLI
 baseurl=https://packages.microsoft.com/yumrepos/azure-cli
 enabled=1
 gpgcheck=1
-gpgkey=https://packages.microsoft.com/keys/microsoft.asc"        
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc      
 """)
 
 
@@ -287,6 +312,7 @@ def main():
 
     parser.add_argument("--azureSovereignCloud",
                         dest="azureSovereignCloud",
+                        default="public",
                         help="Azure Region [china|germany|public|usgov]")
 
     parser.add_argument("--tenantId",
