@@ -1,6 +1,6 @@
 variable "prefix" {
   description = "The Prefix used for all CycleCloud VM resources"
-  default = "bewatrou-cc-tf"
+  default = "cc-tf"
 }
 
 
@@ -26,24 +26,17 @@ variable "cyclecloud_dns_label" {
 
 variable "cyclecloud_username" {
   description = "The username for the initial CycleCloud Admin user and VM user"
-  default = "ccadmin"
 }
 
 variable "cyclecloud_password" {
   description = "The initial password for the CycleCloud Admin user"
-  default = "l3t3min!"
 }
 
-
-variable "cyclecloud_version" {
-  description = "The version of the Azure CycleCloud image"
-  default = "7.9.0"
-}
 
 # Storage account name can contain only lowercase letters and numbers.
 variable "cyclecloud_storage_account" {
   description = "Name of storage account to use for Azure CycleCloud storage locker"
-  default = "bewatroucctfstorage"
+  default = "cctfstorage"
 }
 
 variable "cyclecloud_tenant_id" {
