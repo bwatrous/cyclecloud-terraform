@@ -7,6 +7,14 @@ provider "azurerm" {
   version = "=1.36.0"
 }
 
+resource "azurerm_storage_account" "cc_tf_locker" {
+  name                     = var.cyclecloud_storage_account
+  resource_group_name      = azurerm_resource_group.cc_tf_rg.name
+  location                 = azurerm_resource_group.cc_tf_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
 
 resource "azurerm_virtual_machine" "cc_tf_vm" {
   name                  = local.virtual_machine_name

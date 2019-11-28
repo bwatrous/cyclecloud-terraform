@@ -102,6 +102,10 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
         "Environment": azure_cloud,
         "AzureRMUseManagedIdentity": use_managed_identity,
         "AzureResourceGroup": resource_group,
+        "AzureRMApplicationId": application_id,
+        "AzureRMApplicationSecret": application_secret,
+        "AzureRMSubscriptionId": subscription_id,
+        "AzureRMTenantId": tenant_id,
         "DefaultAccount": True,
         "Location": location,
         "Name": "azure",
@@ -112,12 +116,7 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
     }
     if use_managed_identity:
         azure_data["AzureRMUseManagedIdentity"] = True
-    else:
-        azure_data.update({"AzureRMApplicationId": application_id,
-                           "AzureRMApplicationSecret": application_secret,
-                           "AzureRMSubscriptionId": subscription_id,
-                           "AzureRMTenantId": tenant_id})
-
+    
 
     app_setting_installation = {
         "AdType": "Application.Setting",
