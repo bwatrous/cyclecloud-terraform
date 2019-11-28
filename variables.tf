@@ -40,9 +40,10 @@ variable "cyclecloud_version" {
   default = "7.9.0"
 }
 
+# Storage account name can contain only lowercase letters and numbers.
 variable "cyclecloud_storage_account" {
   description = "Name of storage account to use for Azure CycleCloud storage locker"
-  default = "bewatrou-cc-tf-storage"
+  default = "bewatroucctfstorage"
 }
 
 variable "cyclecloud_tenant_id" {

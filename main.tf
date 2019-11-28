@@ -65,7 +65,7 @@ resource "azurerm_role_assignment" "cc_tf_mi_role" {
   #name                 = random_uuid.cc_tf_mi_role_id.result
   scope                = data.azurerm_subscription.current.id
   #role_definition_name = "Contributor"
-  role_definition_id   = "${data.azurerm_role_definition.contributor.id}"
+  role_definition_id   = data.azurerm_role_definition.contributor.id
   principal_id         = lookup(azurerm_virtual_machine.cc_tf_vm.identity[0], "principal_id")
 }
 
