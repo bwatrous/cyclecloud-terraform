@@ -66,7 +66,7 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
     print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
 
     if not accept_terms:
-        print "Accept terms was FALSE !!!!!  Over-riding for now...
+        print "Accept terms was FALSE !!!!!  Over-riding for now..."
         accept_terms = True
 
     # if path.isfile(cycle_root + "/config/data/account_data.json.imported"):
