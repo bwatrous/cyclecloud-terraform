@@ -50,18 +50,22 @@ resource "azurerm_virtual_machine" "cc_tf_vm" {
 
 data "azurerm_subscription" "current" {}
 
+# Retrieve the contributor role, scoped to our subscription
 #data "azurerm_builtin_role_definition" "contributor" {
 #  name = "Contributor"
 #}
+data "azurerm_role_definition" "contributor" {
+    name  = "Contributor"
+    scope = "${data.azurerm_subscription.current.id}"
+}
 
 resource "random_uuid" "cc_tf_mi_role_id" { }
 
 resource "azurerm_role_assignment" "cc_tf_mi_role" {
-  #name                 = azurerm_virtual_machine.cc_tf_vm.name
-  name                 = random_uuid.cc_tf_mi_role_id.result
+  #name                 = random_uuid.cc_tf_mi_role_id.result
   scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Contributor"
-  #role_definition_id   = "${data.azurerm_subscription.current.id}${data.azurerm_builtin_role_definition.contributor.id}"
+  #role_definition_name = "Contributor"
+  role_definition_id   = "${data.azurerm_role_definition.contributor.id}"
   principal_id         = lookup(azurerm_virtual_machine.cc_tf_vm.identity[0], "principal_id")
 }
 
@@ -119,10 +123,10 @@ resource "azurerm_virtual_machine_extension" "install_cyclecloud" {
 #             --storageAccount=${var.cyclecloud_storage_account} --hostname=${var.cyclecloud_dns_label}"
 #     }
 # SETTINGS
-    
+    # ${var.cyclecloud_dns_label}.${var.location}.cloudapp.azure.com" 
   settings = <<SETTINGS
     {
-        "commandToExecute": "python /tmp/install_cyclecloud.py --acceptTerms --useManagedIdentity --username=${var.cyclecloud_username} --password='${var.cyclecloud_password}' --storageAccount=${var.cyclecloud_storage_account} --hostname=${var.cyclecloud_dns_label}"
+        "commandToExecute": "python /tmp/install_cyclecloud.py --acceptTerms --useManagedIdentity --username=${var.cyclecloud_username} --password='${var.cyclecloud_password}' --storageAccount=${var.cyclecloud_storage_account} --hostname=${azurerm_public_ip.cc_tf_public_ip.fqdn}"
     }
 SETTINGS
 }

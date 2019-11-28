@@ -36,6 +36,7 @@ def _catch_sys_error(cmd_list):
         raise
 
 def create_keypair(username):
+    _catch_sys_error(["mkdir", "-p", "/home/" + username + "/.ssh"])
     _catch_sys_error(["ssh-keygen", "-f", "/home/" + username + "/.ssh/id_rsa", "-N", ""])
     _catch_sys_error(["cp", "/home/" + username + "/.ssh/id_rsa.pub", "/home/" + username + "/.ssh/authorized_keys"])
     _catch_sys_error(["chown", "-R", username + ":" + username, "/home/" + username + "/.ssh"])
@@ -60,12 +61,17 @@ def create_user_credential(username):
 
     copy2(credential_data_file, cycle_root + "/config/data/")
 
-def account_and_cli_setup(vm_metadata, use_managed_identity, tenant_id, application_id, application_secret, admin_user, azure_cloud, accept_terms, password, storageAccount):
+def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, application_id, application_secret,
+                             admin_user, azure_cloud, accept_terms, password, storageAccount):
     print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
 
-    if path.isfile(cycle_root + "/config/data/account_data.json.imported"):
-        print 'Azure account is already configured in CycleCloud. Skipping...'
-        return
+    if not accept_terms:
+        print "Accept terms was FALSE !!!!!  Over-riding for now...
+        accept_terms = True
+
+    # if path.isfile(cycle_root + "/config/data/account_data.json.imported"):
+    #     print 'Azure account is already configured in CycleCloud. Skipping...'
+    #     return
 
     subscription_id = vm_metadata["compute"]["subscriptionId"]
     location = vm_metadata["compute"]["location"]
@@ -156,6 +162,23 @@ def account_and_cli_setup(vm_metadata, use_managed_identity, tenant_id, applicat
 
     copy2(account_data_file, cycle_root + "/config/data/")
 
+    if not accept_terms:
+        # reset the installation status so the splash screen re-appears
+        print "Resetting installation"
+        sql_statement = 'update Application.Setting set Value = false where name ==\"cycleserver.installation.complete\"'
+        _catch_sys_error(
+            ["/opt/cycle_server/cycle_server", "execute", sql_statement])
+
+    # set the permissions so that the first login works.
+    perms_sql_statement = 'update Application.Setting set Value = false where Name == \"authorization.check_datastore_permissions\"'
+    _catch_sys_error(
+        ["/opt/cycle_server/cycle_server", "execute", perms_sql_statement])
+
+    return cyclecloud_admin_pw
+
+def initialize_cyclecloud_cli(cyclecloud_admin_pw):
+    print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
+
     # wait for the data to be imported
     password_flag = ("--password=%s" % cyclecloud_admin_pw)
     sleep(5)
@@ -170,18 +193,6 @@ def account_and_cli_setup(vm_metadata, use_managed_identity, tenant_id, applicat
     # create the cloud provide account
     _catch_sys_error(["/usr/local/bin/cyclecloud", "account",
                       "create", "-f", azure_data_file])
-
-    if not accept_terms:
-        # reset the installation status so the splash screen re-appears
-        print "Resetting installation"
-        sql_statement = 'update Application.Setting set Value = false where name ==\"cycleserver.installation.complete\"'
-        _catch_sys_error(
-            ["/opt/cycle_server/cycle_server", "execute", sql_statement])
-
-    # set the permissions so that the first login works.
-    perms_sql_statement = 'update Application.Setting set Value = false where Name == \"authorization.check_datastore_permissions\"'
-    _catch_sys_error(
-        ["/opt/cycle_server/cycle_server", "execute", perms_sql_statement])
 
 
 def letsEncrypt(fqdn, location):
@@ -270,7 +281,6 @@ def download_install_cc():
     print "Installing Azure CycleCloud server"
     _catch_sys_error(["yum", "install", "-y", "cyclecloud"])
 
-    install_cc_cli()
 
 def configure_msft_yum_repos():
     print "Configuring Microsoft yum repository for CycleCloud install"
@@ -364,11 +374,17 @@ def main():
     start_cc()
 
     vm_metadata = get_vm_metadata()
-    
     letsEncrypt(args.hostname, vm_metadata["compute"]["location"])
-    account_and_cli_setup(vm_metadata, args.useManagedIdentity, args.tenantId, args.applicationId,
-                          args.applicationSecret, args.username, args.azureSovereignCloud, args.acceptTerms, args.password, args.storageAccount)
+
+    cyclecloud_admin_pw = cyclecloud_account_setup(vm_metadata, args.useManagedIdentity, args.tenantId, args.applicationId,
+                                                   args.applicationSecret, args.username, args.azureSovereignCloud, args.acceptTerms, 
+                                                   args.password, args.storageAccount)
+
     create_user_credential(args.username)
+
+    install_cc_cli()
+    initialize_cyclecloud_cli(cyclecloud_admin_pw)
+    
     clean_up()
 
 
