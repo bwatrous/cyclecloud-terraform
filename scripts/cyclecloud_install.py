@@ -128,14 +128,7 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
         "Name": "cycleserver.installation.initial_user",
         "Value": admin_user
     }
-    authenticated_user = {
-        "AdType": "AuthenticatedUser",
-        "Name": 'root',
-        "RawPassword": cyclecloud_admin_pw,
-        "Superuser": True
-    }
     account_data = [
-        authenticated_user,
         initial_user,
         app_setting_installation
     ]
