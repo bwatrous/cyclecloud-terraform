@@ -107,7 +107,7 @@ resource "azurerm_virtual_machine_extension" "fetch_cyclecloud_install_script" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "curl -k -L -o /tmp/install_cyclecloud.py \"https://raw.githubusercontent.com/themorey/cyclecloud-terraform/master/scripts/cyclecloud_install.py\""
+        "commandToExecute": "curl -k -L -o /tmp/install_cyclecloud.py \"https://raw.githubusercontent.com/bwatrous/cyclecloud-terraform/master/scripts/cyclecloud_install.py\""
     }
 SETTINGS
 }
