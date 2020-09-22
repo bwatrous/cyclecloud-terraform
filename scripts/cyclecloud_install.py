@@ -179,11 +179,12 @@ def initialize_cyclecloud_cli(username, cyclecloud_admin_pw):
 
     # wait for the data to be imported
     password_flag = ("--password=%s" % cyclecloud_admin_pw)
+    username_flag = ("--username=%s" % username)
     sleep(5)
 
     print "Initializing cylcecloud CLI"
     _catch_sys_error(["/usr/local/bin/cyclecloud", "initialize", "--loglevel=debug", "--batch",
-                      "--url=https://localhost", "--verify-ssl=false", username, password_flag])
+                      "--url=https://localhost", "--verify-ssl=false", username_flag, password_flag])
 
 
 def letsEncrypt(fqdn, location):
