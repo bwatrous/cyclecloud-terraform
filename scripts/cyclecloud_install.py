@@ -166,7 +166,7 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
     _catch_sys_error(
         ["/opt/cycle_server/cycle_server", "execute", perms_sql_statement])
 
-    initialize_cyclecloud_cli(cyclecloud_admin_pw)
+    initialize_cyclecloud_cli(admin_user, cyclecloud_admin_pw)
 
     print "Registering Azure subscription"
     # create the cloud provide account
@@ -174,16 +174,17 @@ def cyclecloud_account_setup(vm_metadata, use_managed_identity, tenant_id, appli
                       "create", "-f", azure_data_file])
 
 
-def initialize_cyclecloud_cli(cyclecloud_admin_pw):
+def initialize_cyclecloud_cli(username, cyclecloud_admin_pw):
     print "Setting up azure account in CycleCloud and initializing cyclecloud CLI"
 
     # wait for the data to be imported
     password_flag = ("--password=%s" % cyclecloud_admin_pw)
+    username_flag = ("--username=%s" % username)
     sleep(5)
 
     print "Initializing cylcecloud CLI"
     _catch_sys_error(["/usr/local/bin/cyclecloud", "initialize", "--loglevel=debug", "--batch",
-                      "--url=https://localhost", "--verify-ssl=false", "--username=root", password_flag])
+                      "--url=https://localhost", "--verify-ssl=false", username_flag, password_flag])
 
 
 def letsEncrypt(fqdn, location):
