@@ -14,6 +14,12 @@ variable "machine_type" {
   default = "Standard_DS4_v2"
 }
 
+
+variable "os_disk_size_gb" {
+  description = "The size of the OS disk for the CycleCloud VM (should be >= 128GB and >= 256 for large clusters)"
+  default = "128"
+}
+
 variable "cyclecloud_computer_name" {
     description =  "The private hostname for the CycleCloud VM"
     default = "cyclecloud"
@@ -30,6 +36,10 @@ variable "cyclecloud_username" {
 
 variable "cyclecloud_password" {
   description = "The initial password for the CycleCloud Admin user"
+}
+
+variable "cyclecloud_user_publickey" {
+  description = "The public key for the initial CycleCloud Admin user and VM user"
 }
 
 
