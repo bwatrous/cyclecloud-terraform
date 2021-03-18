@@ -1,6 +1,6 @@
 locals {
   virtual_machine_name = "${var.prefix}-vm"
-  cyclecloud_install_script_url = "https://raw.githubusercontent.com/bwatrous/cyclecloud-terraform/feature/update_install_script/scripts/cyclecloud_install.py"
+  cyclecloud_install_script_url = "https://raw.githubusercontent.com/bwatrous/cyclecloud-terraform/master/scripts/cyclecloud_install.py"
 }
 
 provider "azurerm" {
@@ -62,12 +62,10 @@ data "azurerm_role_definition" "contributor" {
     scope = "${data.azurerm_subscription.current.id}"
 }
 
-resource "random_uuid" "cc_tf_mi_role_id" { }
-
 resource "azurerm_role_assignment" "cc_tf_mi_role" {
   scope                = data.azurerm_subscription.current.id
   role_definition_id   = data.azurerm_role_definition.contributor.id
-  principal_id         = lookup(azurerm_linux_virtual_machine.cc_tf_vm.identity[0], "principal_id")
+  principal_id         = azurerm_linux_virtual_machine.cc_tf_vm.identity[0].principal_id
 }
 
 resource "azurerm_virtual_machine_extension" "install_cyclecloud" {
