@@ -14,7 +14,7 @@ resource "azurerm_subnet" "cc_tf_subnet" {
   name                 = "${var.prefix}-subnet"
   virtual_network_name = azurerm_virtual_network.cc_tf_vnet.name
   resource_group_name  = azurerm_resource_group.cc_tf_rg.name
-  address_prefix       = "10.0.0.0/24"
+  address_prefixes     = ["10.0.0.0/24"]
   service_endpoints    = ["Microsoft.Storage"]
 }
 
