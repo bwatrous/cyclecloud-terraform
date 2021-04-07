@@ -497,6 +497,10 @@ def main():
                         dest="acceptTerms",
                         action="store_true",
                         help="Accept Cyclecloud terms and do a silent install")
+    parser.add_argument("--asRoot",
+                        dest="asRoot",
+                        action="store_true",
+                        help="use asRoot if running as root user to create user credentials for cyclecloud account.")
 
     parser.add_argument("--useLetsEncrypt",
                         dest="useLetsEncrypt",
@@ -601,7 +605,8 @@ def main():
         letsEncrypt(args.hostname, vm_metadata["compute"]["location"])
 
     #  Create user requires root privileges
-    # create_user_credential(args.username, args.publickey)
+    if args.asRoot:
+        create_user_credential(args.username, args.publickey)
 
     clean_up()
 
