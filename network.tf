@@ -38,3 +38,30 @@ resource "azurerm_network_interface" "cc_tf_nic" {
     public_ip_address_id          = azurerm_public_ip.cc_tf_public_ip.id
   }
 }
+ 
+resource "azurerm_network_security_group" "cc_tf_nsg" {
+  name                = "${var.prefix}-nsg"
+  location            = azurerm_resource_group.cc_tf_rg.location
+  resource_group_name = azurerm_resource_group.cc_tf_rg.name
+ 
+}
+ 
+resource "azurerm_network_security_rule" "cc_tf_nsg_rules" {
+  for_each                    = local.nsgrules 
+  name                        = each.key
+  direction                   = each.value.direction
+  access                      = each.value.access
+  priority                    = each.value.priority
+  protocol                    = each.value.protocol
+  source_port_range           = each.value.source_port_range
+  destination_port_range      = each.value.destination_port_range
+  source_address_prefix       = each.value.source_address_prefix
+  destination_address_prefix  = each.value.destination_address_prefix
+  resource_group_name         = azurerm_resource_group.cc_tf_rg.name
+  network_security_group_name = azurerm_network_security_group.cc_tf_nsg.name
+}
+
+resource "azurerm_network_interface_security_group_association" "cc_tf_nsg_association" {
+  network_interface_id      = azurerm_network_interface.cc_tf_nic.id
+  network_security_group_id = azurerm_network_security_group.cc_tf_nsg.id
+}
